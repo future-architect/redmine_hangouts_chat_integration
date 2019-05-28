@@ -1,0 +1,2 @@
+# redmine_hangouts_chat_integration
+google hangouts chat連携のredmineプラグイン
