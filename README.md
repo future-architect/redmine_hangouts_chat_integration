@@ -5,7 +5,7 @@ For Redmine 2.x.x or Redmine 3.x.x.
 ### Plugin installation
 
 1.  Copy the plugin directory into the $REDMINE_ROOT/plugins directory. Please
-    note that plugin's folder name should be "redmine_hangouts_chat_integration". 
+    note that plugin's folder name should be "redmine_hangouts_chat_integration".
 
 2.  Install 'httpclient'
 
@@ -44,6 +44,14 @@ Try this:
 3.  Paste the google hangouts chat webhook URL into "Webhook".
 
 4.  Apply this configure.
+
+### Disable specified project
+
+1.  Login redmine used yourself accout.
+
+2.  Open the project menu "Settings" page.
+
+3.  Switch "Hangouts Chat Webhook Disabled" to "Yes"
 
 ### Disable specified accout
 
