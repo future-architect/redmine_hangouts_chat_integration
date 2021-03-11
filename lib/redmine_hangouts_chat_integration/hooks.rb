@@ -2,6 +2,7 @@ require 'httpclient'
 
 module RedmineHangoutsChatIntegration
   class Hooks < Redmine::Hook::ViewListener
+    CHARLIMIT = 1000
     include ApplicationHelper
     include CustomFieldsHelper
     include IssuesHelper
@@ -11,10 +12,13 @@ module RedmineHangoutsChatIntegration
 ################################################################################
     def controller_issues_new_after_save(context={})
       ## check user
-      return if is_disabled(User.current) 
+      return if is_disabled(User.current)
 
       ## Get issue
       issue = context[:issue]
+
+      ## Is project disabled
+      return if is_project_disabled(issue.project)
 
       ## Is private issue
       return if issue.is_private
@@ -42,17 +46,18 @@ module RedmineHangoutsChatIntegration
       data['text'] = data['text'] + "\n*#{l(:field_subject)}:<#{issue_url}|[#{issue.project.name} - #{issue.tracker.name} ##{issue.id}] #{subject}>*"
 
       ## Add issue URL
-      data['text'] = data['text'] + "\n*URL:* #{issue_url}"
+      data['text'] = data['text'] + "\n*URL:* #{issue_url}\n"
 
       ## Add issue author
-      data['text'] = data['text'] + "\n```" + l(:text_issue_added, :id => "##{issue.id}", :author => issue.author)
+      data['text'] = data['text'] + "\n```\n" + l(:text_issue_added, :id => "##{issue.id}", :author => issue.author)
 
       ## Add issue attributes
       data['text'] = data['text'] + "\n#{''.ljust(37, '-')}\n" + render_email_issue_attributes(issue, User.current)
-      
+
       ## Add issue descripption
       unless issue.description.blank?
-        data['text'] = data['text'] + "\n#{''.ljust(37, '-')}\n#{issue.description}"
+        description = issue.description.truncate(CHARLIMIT, omission: "\n...")
+        data['text'] = data['text'] + "\n#{''.ljust(37, '-')}\n[#{l(:field_description)}]\n#{description}"
       end
 
       ## Add issue attachments
@@ -75,11 +80,14 @@ module RedmineHangoutsChatIntegration
 ################################################################################
     def controller_issues_edit_after_save(context={})
       ## check user
-      return if is_disabled(User.current) 
+      return if is_disabled(User.current)
 
       ## Get issue and journal
       issue = context[:issue]
       journal = context[:journal]
+
+      ## Is project disabled
+      return if is_project_disabled(issue.project)
 
       ## Is private issue
       return if issue.is_private
@@ -108,10 +116,10 @@ module RedmineHangoutsChatIntegration
       data['text'] = data['text'] + "\n*#{l(:field_subject)}:<#{issue_url}|[#{issue.project.name} - #{issue.tracker.name} ##{issue.id}] #{subject}>*"
 
       ## Add issue URL
-      data['text'] = data['text'] + "\n*URL:* #{issue_url}"
+      data['text'] = data['text'] + "\n*URL:* #{issue_url}\n"
 
       ## Add issue author
-      data['text'] = data['text'] + "\n```" + l(:text_issue_updated, :id => "##{issue.id}", :author => journal.user)
+      data['text'] = data['text'] + "\n```\n" + l(:text_issue_updated, :id => "##{issue.id}", :author => journal.user)
 
       ## Add issue details
       details = details_to_strings(journal.visible_details, true).join("\n")
@@ -119,9 +127,19 @@ module RedmineHangoutsChatIntegration
         data['text'] = data['text'] + "\n#{''.ljust(37, '-')}\n#{details}"
       end
 
+      ## Add issue description
+      journal.visible_details.each do |detail|
+        if detail.prop_key == 'description'
+          description = detail.value.truncate(CHARLIMIT, omission: "\n...")
+          data['text'] = data['text'] + "\n#{''.ljust(37, '-')}\n[#{l(:field_description)}]\n#{description}"
+          break
+        end
+      end
+
       ## Add issue notes
       unless issue.notes.blank?
-        data['text'] = data['text'] + "\n#{''.ljust(37, '-')}\n#{issue.notes}"
+        notes = issue.notes.truncate(CHARLIMIT, omission: "\n...")
+        data['text'] = data['text'] + "\n#{''.ljust(37, '-')}\n[#{l(:field_notes)}]\n#{notes}"
       end
 
       ## Add ```
@@ -180,7 +198,7 @@ private
     def is_disabled(user)
       ## check user
       return true if user.nil?
-      
+
       ## check user custom field
       user_cf = UserCustomField.find_by_name("Hangouts Chat Disabled")
       return true if user_cf.nil?
@@ -192,6 +210,28 @@ private
       return false if user_cv.nil?
 
       return false if user_cv.value == '0'
+
+      return true
+    end
+
+################################################################################
+## Is Hangouts Chat Webhook Disabled
+################################################################################
+    def is_project_disabled(proj)
+      ## check project
+      return true if proj.nil?
+
+      ## check proj custom field
+      proj_cf = ProjectCustomField.find_by_name("Hangouts Chat Webhook Disabled")
+      return true if proj_cf.nil?
+
+      ## check proj custom value
+      proj_cv = proj.custom_value_for(proj_cf)
+
+      ## proj_cv is null
+      return false if proj_cv.nil?
+
+      return false if proj_cv.value == '0'
 
       return true
     end
@@ -232,6 +272,8 @@ private
         client = HTTPClient.new(https_proxy)
         client.ssl_config.cert_store.set_default_paths
         client.ssl_config.ssl_version = :auto
+        # client.protocol_retry_count = 10
+        # client.debug_dev = Rails.logger
         client.post_async url, {:body => data.to_json, :header => {'Content-Type' => 'application/json'}}
       rescue Exception => e
         Rails.logger.warn("cannot connect to #{url}")
