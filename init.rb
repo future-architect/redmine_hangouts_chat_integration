@@ -8,7 +8,7 @@ Redmine::Plugin.register :redmine_hangouts_chat_integration do
   name 'Redmine Hangouts Chat Integration plugin'
   author 'Komatsu Yuji'
   description 'This is a plugin for Redmine Google Hangouts Chat Integration'
-  version '0.1.3'
+  version '0.1.4'
   url 'https://www.future.co.jp/'
   author_url 'https://www.future.co.jp/'
 
