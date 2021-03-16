@@ -1,3 +1,0 @@
-= redmine_hangouts_chat_integration
-
-Description goes here
