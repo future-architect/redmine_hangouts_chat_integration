@@ -209,9 +209,9 @@ private
       ## user_cv is null
       return false if user_cv.nil?
 
-      return false if user_cv.value == '0'
+      return true if user_cv.value == '1'
 
-      return true
+      return false
     end
 
 ################################################################################
@@ -231,9 +231,9 @@ private
       ## proj_cv is null
       return false if proj_cv.nil?
 
-      return false if proj_cv.value == '0'
+      return false if proj_cv.value == '1'
 
-      return true
+      return false
     end
 
 ################################################################################

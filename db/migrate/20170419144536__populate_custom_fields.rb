@@ -1,4 +1,4 @@
-class PopulateCustomFields < ActiveRecord::Migration
+class PopulateCustomFields < ActiveRecord::Migration[4.2]
 
 ################################################################################
 ## Create custom field
@@ -8,7 +8,7 @@ class PopulateCustomFields < ActiveRecord::Migration
       ProjectCustomField.create(name: 'Hangouts Chat Webhook', field_format: 'string', visible: 0, default_value: '')
     end
     if UserCustomField.find_by_name('Hangouts Chat Disabled').nil?
-      UserCustomField.create(name: 'Hangouts Chat Disabled', field_format: 'bool', visible: 0, default_value: 0, is_required: 1)
+      UserCustomField.create(name: 'Hangouts Chat Disabled', field_format: 'bool', visible: 0, default_value: 0, is_required: 0, edit_tag_style: 'check_box')
     end
   end
 
